@@ -1,5 +1,5 @@
 {
-  "name": "new_project_alias",
+  "name": "field-arrays-with-rhf",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
+    "@radix-ui/react-label": "^2.1.3",
+    "@radix-ui/react-select": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.0",
     "@tailwindcss/vite": "^4.1.3",
     "@tanstack/react-query": "^5.72.1",
     "@tanstack/react-query-devtools": "^5.72.1",
@@ -20,9 +24,11 @@
     "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.55.0",
     "tailwind-merge": "^3.2.0",
     "tailwindcss": "^4.1.3",
-    "tw-animate-css": "^1.2.5"
+    "tw-animate-css": "^1.2.5",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
