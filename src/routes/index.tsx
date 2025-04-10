@@ -166,7 +166,6 @@ function Index() {
       <Form {...methods}>
         <form onSubmit={methods.handleSubmit((data) => mutate(data))} className="space-y-6">
           <FormField
-            control={methods.control}
             name="name"
             render={({ field }) => (
               <FormItem>
@@ -179,7 +178,6 @@ function Index() {
             )}
           />
           <FormField
-            control={methods.control}
             name="fruit"
             render={({ field }) => (
               <FormItem>
@@ -200,19 +198,6 @@ function Index() {
                     })}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={methods.control}
-            name="comment"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Comment</FormLabel>
-                <FormControl>
-                  <Textarea {...field} disabled={isPending} />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -276,6 +261,18 @@ function Index() {
               );
             })}
           </div>
+          <FormField
+            name="comment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Comment</FormLabel>
+                <FormControl>
+                  <Textarea {...field} disabled={isPending} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="flex gap-2">
             <Button type="submit" disabled={isPending}>
