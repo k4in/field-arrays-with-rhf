@@ -1,8 +1,9 @@
 import { useState } from 'react';
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Trash2Icon, ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { z } from 'zod';
 import { queryOptions, useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { delay } from '@/lib/utils/delay';
@@ -22,15 +23,23 @@ const formQueryOptions = queryOptions<FruitOptions>({
 });
 
 export const Route = createFileRoute('/')({
+  //@ts-expect-error CLEAN!! queryClient type is not recognized in the context
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData<FruitOptions>(formQueryOptions),
   component: Index,
 });
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
-  fruit: z.enum(['apple', 'banana', 'orange', 'blueberry'], {
-    errorMap: () => ({ message: 'Please select a fruit' }),
-  }),
+  fruit: z.string().min(1, 'Fruit is required'),
+  vegetables: z
+    .array(
+      z.object({
+        vegetableName: z.string().min(1, 'Vegetable must have a name'),
+        color: z.string().min(1, 'Please enter the color of the vegetable'),
+        length: z.coerce.number().min(0.1, 'Size must be greater than 0').optional(),
+      })
+    )
+    .min(1, 'At least one vegetable must be defined'),
   comment: z.string().optional(),
 });
 
@@ -41,12 +50,12 @@ function Index() {
   const { data } = useSuspenseQuery<FruitOptions>(formQueryOptions);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async (values: FormValues) => {
+    mutationFn: async (data: FormValues) => {
       await delay(1500);
-      return values;
+      return data;
     },
-    onSuccess: (values) => {
-      setDisplayValues(values);
+    onSuccess: (data) => {
+      setDisplayValues(data);
     },
   });
 
@@ -54,15 +63,18 @@ function Index() {
     defaultValues: {
       name: '',
       fruit: 'apple',
+      vegetables: [{ vegetableName: 'Zucchini', color: 'green', length: 15 }],
       comment: '',
     },
     resolver: zodResolver(schema),
   });
 
+  const fieldArray = useFieldArray({ control: methods.control, name: 'vegetables' });
+
   return (
     <div className="grid grid-cols-2 gap-10 p-10">
       <Form {...methods}>
-        <form onSubmit={methods.handleSubmit(mutate)} className="space-y-6">
+        <form onSubmit={methods.handleSubmit((data) => mutate(data))} className="space-y-6">
           <FormField
             control={methods.control}
             name="name"
@@ -82,10 +94,10 @@ function Index() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Select fruit</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPending}>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a verified email to display" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a fruit" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -115,9 +127,115 @@ function Index() {
               </FormItem>
             )}
           />
-          <Button type="submit" disabled={isPending}>
-            Submit
-          </Button>
+          <div className="space-y-2">
+            <div className="grid grid-cols-[1fr_1fr_1fr_36px_36px_36px] items-start gap-4">
+              <div className="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
+                Vegetable Name
+              </div>
+              <div className="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
+                Color
+              </div>
+              <div className="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
+                Size (in cm)
+              </div>
+            </div>
+            {fieldArray.fields.map((field, index) => {
+              return (
+                <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_36px_36px_36px] items-start gap-2">
+                  <FormField
+                    control={methods.control}
+                    name={`vegetables.${index}.vegetableName`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        {/* <FormLabel>Vegetable Name</FormLabel> */}
+                        <FormControl>
+                          <Input type="text" {...field} disabled={isPending} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={methods.control}
+                    name={`vegetables.${index}.color`}
+                    render={({ field }) => (
+                      <FormItem>
+                        {/* <FormLabel>Color</FormLabel> */}
+                        <FormControl>
+                          <Input type="text" {...field} disabled={isPending} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={methods.control}
+                    name={`vegetables.${index}.length`}
+                    render={({ field }) => (
+                      <FormItem>
+                        {/* <FormLabel>Size (in cm)</FormLabel> */}
+                        <FormControl>
+                          <Input type="number" step={0.1} min={0} {...field} disabled={isPending} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {index > 0 ? (
+                    <Button
+                      type="button"
+                      variant={'secondary'}
+                      size="icon"
+                      onClick={() => fieldArray.move(index, index - 1)}
+                      disabled={isPending}
+                    >
+                      <ArrowBigUp />
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  {index < fieldArray.fields.length - 1 ? (
+                    <Button
+                      type="button"
+                      variant={'secondary'}
+                      size="icon"
+                      onClick={() => fieldArray.move(index, index + 1)}
+                      disabled={isPending}
+                    >
+                      <ArrowBigDown />
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <Button
+                    type="button"
+                    variant={'destructive'}
+                    size="icon"
+                    onClick={() => fieldArray.remove(index)}
+                    disabled={isPending}
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isPending}>
+              Submit
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isPending}
+              onClick={() => {
+                fieldArray.append({ vegetableName: '', color: '', length: undefined });
+              }}
+            >
+              Add Vegetable
+            </Button>
+          </div>
         </form>
       </Form>
       <div>{isPending ? 'submitting...' : JSON.stringify(displayValues)}</div>

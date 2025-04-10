@@ -9,11 +9,15 @@ import { routeTree } from './routeTree.gen';
 
 const queryClient = new QueryClient();
 
+interface RouterContext {
+  queryClient: QueryClient;
+}
+
 const router = createRouter({
   routeTree,
   context: {
     queryClient,
-  },
+  } satisfies RouterContext,
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
@@ -22,6 +26,7 @@ const router = createRouter({
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
+    context: RouterContext;
   }
 }
 
