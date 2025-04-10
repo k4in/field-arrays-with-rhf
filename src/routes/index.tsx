@@ -33,17 +33,100 @@ const schema = z.object({
   fruit: z.string().min(1, 'Fruit is required'),
   vegetables: z
     .array(
-      z.object({
-        vegetableName: z.string().min(1, 'Vegetable must have a name'),
-        color: z.string().min(1, 'Please enter the color of the vegetable'),
-        length: z.coerce.number().min(0.1, 'Size must be greater than 0').optional(),
-      })
+      z.discriminatedUnion('type', [
+        z.object({
+          type: z.literal('vegetable'),
+          vegetableName: z.string().min(1),
+          color: z.string().min(1),
+          length: z.coerce.number().min(0.1).optional(),
+        }),
+        z.object({
+          type: z.literal('fruit'),
+          fruitName: z.string().min(1),
+          amount: z.coerce.number().min(1),
+        }),
+      ])
     )
-    .min(1, 'At least one vegetable must be defined'),
+    .min(1, 'At least one vegetable fruit or vegetable must be defined'),
   comment: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function VegetableRow({ index, isPending }: { index: number; isPending: boolean }) {
+  return (
+    <>
+      <FormField
+        // control={methods.control}
+        name={`vegetables.${index}.vegetableName`}
+        render={({ field }) => (
+          <FormItem className="flex-1">
+            <FormControl>
+              <Input type="text" {...field} disabled={isPending} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        // control={methods.control}
+        name={`vegetables.${index}.color`}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <Input type="text" {...field} disabled={isPending} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        // control={methods.control}
+        name={`vegetables.${index}.length`}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <Input type="number" step={0.1} min={0} {...field} disabled={isPending} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  );
+}
+
+function FruitRow({ index, isPending }: { index: number; isPending: boolean }) {
+  return (
+    <>
+      <FormField
+        // control={methods.control}
+        name={`vegetables.${index}.fruitName`}
+        render={({ field }) => (
+          <FormItem className="flex-1">
+            <FormControl>
+              <Input type="text" {...field} disabled={isPending} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        // control={methods.control}
+        name={`vegetables.${index}.amount`}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <Input type="number" step={0.1} min={0} {...field} disabled={isPending} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <div />
+    </>
+  );
+}
 
 function Index() {
   const [displayValues, setDisplayValues] = useState<FormValues | null>(null);
@@ -62,8 +145,15 @@ function Index() {
   const methods = useForm<FormValues>({
     defaultValues: {
       name: '',
-      fruit: 'apple',
-      vegetables: [{ vegetableName: 'Zucchini', color: 'green', length: 15 }],
+      fruit: 'banana',
+      vegetables: [
+        { type: 'vegetable', vegetableName: 'Zucchini', color: 'green', length: 15 },
+        { type: 'vegetable', vegetableName: 'Pumpkin', color: 'yellow', length: 25 },
+        { type: 'fruit', fruitName: 'Dragonfruit', amount: 8 },
+        { type: 'vegetable', vegetableName: 'Broccoli', color: 'green', length: 17 },
+        { type: 'fruit', fruitName: 'Apple', amount: 3 },
+        { type: 'vegetable', vegetableName: 'Carrot', color: 'orange', length: 11 },
+      ],
       comment: '',
     },
     resolver: zodResolver(schema),
@@ -128,7 +218,7 @@ function Index() {
             )}
           />
           <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_1fr_1fr_36px_36px_36px] items-start gap-4">
+            <div className="grid grid-cols-[1fr_1fr_1fr_36px_36px_36px] items-start gap-2">
               <div className="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50">
                 Vegetable Name
               </div>
@@ -142,45 +232,11 @@ function Index() {
             {fieldArray.fields.map((field, index) => {
               return (
                 <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_36px_36px_36px] items-start gap-2">
-                  <FormField
-                    control={methods.control}
-                    name={`vegetables.${index}.vegetableName`}
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        {/* <FormLabel>Vegetable Name</FormLabel> */}
-                        <FormControl>
-                          <Input type="text" {...field} disabled={isPending} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={methods.control}
-                    name={`vegetables.${index}.color`}
-                    render={({ field }) => (
-                      <FormItem>
-                        {/* <FormLabel>Color</FormLabel> */}
-                        <FormControl>
-                          <Input type="text" {...field} disabled={isPending} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={methods.control}
-                    name={`vegetables.${index}.length`}
-                    render={({ field }) => (
-                      <FormItem>
-                        {/* <FormLabel>Size (in cm)</FormLabel> */}
-                        <FormControl>
-                          <Input type="number" step={0.1} min={0} {...field} disabled={isPending} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {'type' in field && field.type === 'fruit' ? (
+                    <FruitRow index={index} isPending={isPending} />
+                  ) : (
+                    <VegetableRow index={index} isPending={isPending} />
+                  )}
                   {index > 0 ? (
                     <Button
                       type="button"
@@ -230,10 +286,20 @@ function Index() {
               variant="secondary"
               disabled={isPending}
               onClick={() => {
-                fieldArray.append({ vegetableName: '', color: '', length: undefined });
+                fieldArray.append({ type: 'vegetable', vegetableName: '', color: '', length: undefined });
               }}
             >
               Add Vegetable
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isPending}
+              onClick={() => {
+                fieldArray.append({ type: 'fruit', fruitName: '', amount: 0 });
+              }}
+            >
+              Add Fruit
             </Button>
           </div>
         </form>
